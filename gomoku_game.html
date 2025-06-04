@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钻石五子棋 - Diamond Gomoku</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.1) 100%);
+            pointer-events: none;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(45deg, #fff, #f0f0f0, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .level-selector {
+            margin-bottom: 20px;
+        }
+
+        .level-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .level-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .level-btn.active {
+            background: linear-gradient(45deg, #FF6B6B, #FF5252);
+            transform: scale(1.1);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 30px);
+            grid-template-rows: repeat(15, 30px);
+            gap: 2px;
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #DEB887, #F4A460);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(139, 69, 19, 0.3);
+            position: relative;
+        }
+
+        .cell:hover {
+            background: linear-gradient(45deg, #F4A460, #DEB887);
+            transform: scale(1.05);
+        }
+
+        .piece {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            position: relative;
+            animation: placePiece 0.3s ease-out;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #000);
+            border: 2px solid #333;
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0);
+            border: 2px solid #ccc;
+        }
+
+        .piece::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 20%;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            filter: blur(1px);
+        }
+
+        @keyframes placePiece {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(90deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            min-height: 30px;
+        }
+
+        .win-line {
+            position: absolute;
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.8), rgba(255, 255, 0, 0.8));
+            border-radius: 2px;
+            animation: winGlow 2s infinite alternate;
+            z-index: 10;
+        }
+
+        @keyframes winGlow {
+            0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(255, 215, 0, 1); }
+        }
+
+        .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% {
+                transform: translateY(-10px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .music-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .music-control:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles" id="particles"></div>
+    
+    <div class="game-container">
+        <button class="music-control" id="musicToggle" onclick="toggleMusic()">🎵</button>
+        
+        <h1>💎 钻石五子棋 💎</h1>
+        
+        <div class="game-info">
+            <div>关卡: <span id="currentLevel">1</span></div>
+            <div>当前玩家: <span id="currentPlayer">黑子</span></div>
+            <div>AI难度: <span id="aiDifficulty">简单</span></div>
+        </div>
+
+        <div class="level-selector">
+            <button class="level-btn active" onclick="setLevel(1)">关卡1</button>
+            <button class="level-btn" onclick="setLevel(2)">关卡2</button>
+            <button class="level-btn" onclick="setLevel(3)">关卡3</button>
+            <button class="level-btn" onclick="setLevel(4)">关卡4</button>
+            <button class="level-btn" onclick="setLevel(5)">关卡5</button>
+        </div>
+
+        <div class="board" id="gameBoard"></div>
+
+        <div class="controls">
+            <button onclick="newGame()">新游戏</button>
+            <button onclick="undoMove()" id="undoBtn" disabled>悔棋</button>
+            <button onclick="getHint()" id="hintBtn">提示</button>
+        </div>
+
+        <div class="status" id="gameStatus">游戏开始！你是黑子先手</div>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJiVrV9xvFibtl5xsU5rq0lyqD5nPk5jOVdnM01lNExkL0NiIztd" type="audio/wav">
+    </audio>
+
+    <script>
+        let board = Array(15).fill().map(() => Array(15).fill(0));
+        let currentPlayer = 1; // 1 for black (human), -1 for white (AI)
+        let gameOver = false;
+        let moveHistory = [];
+        let currentLevel = 1;
+        let musicPlaying = false;
+
+        const levelSettings = {
+            1: { depth: 1, difficulty: '简单', desc: '初学者' },
+            2: { depth: 2, difficulty: '容易', desc: '有点思考' },
+            3: { depth: 3, difficulty: '中等', desc: '认真对手' },
+            4: { depth: 4, difficulty: '困难', desc: '强劲挑战' },
+            5: { depth: 5, difficulty: '专家', desc: '大师级别' }
+        };
+
+        function initGame() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('click', () => makeMove(i, j));
+                    gameBoard.appendChild(cell);
+                }
+            }
+            
+            createParticles();
+            updateDisplay();
+        }
+
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        function makeMove(row, col) {
+            if (gameOver || board[row][col] !== 0) return;
+
+            board[row][col] = currentPlayer;
+            moveHistory.push({row, col, player: currentPlayer});
+            
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const piece = document.createElement('div');
+            piece.className = `piece ${currentPlayer === 1 ? 'black' : 'white'}`;
+            cell.appendChild(piece);
+
+            if (checkWin(row, col)) {
+                gameOver = true;
+                document.getElementById('gameStatus').textContent = 
+                    currentPlayer === 1 ? '🎉 恭喜！你赢了！' : '😔 AI获胜，再接再厉！';
+                return;
+            }
+
+            if (isBoardFull()) {
+                gameOver = true;
+                document.getElementById('gameStatus').textContent = '🤝 平局！';
+                return;
+            }
+
+            currentPlayer = -currentPlayer;
+            updateDisplay();
+            document.getElementById('undoBtn').disabled = false;
+
+            if (currentPlayer === -1) {
+                setTimeout(() => {
+                    aiMove();
+                }, 500);
+            }
+        }
+
+        function aiMove() {
+            const move = getBestMove();
+            if (move) {
+                makeMove(move.row, move.col);
+            }
+        }
+
+        function getBestMove() {
+            const depth = levelSettings[currentLevel].depth;
+            let bestScore = -Infinity;
+            let bestMove = null;
+
+            // 首先检查是否有立即获胜的机会
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = -1;
+                        if (checkWin(i, j)) {
+                            board[i][j] = 0;
+                            return {row: i, col: j};
+                        }
+                        board[i][j] = 0;
+                    }
+                }
+            }
+
+            // 检查是否需要阻止玩家获胜
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = 1;
+                        if (checkWin(i, j)) {
+                            board[i][j] = 0;
+                            return {row: i, col: j};
+                        }
+                        board[i][j] = 0;
+                    }
+                }
+            }
+
+            // 使用minimax算法
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = -1;
+                        const score = minimax(depth - 1, false, -Infinity, Infinity);
+                        board[i][j] = 0;
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = {row: i, col: j};
+                        }
+                    }
+                }
+            }
+
+            return bestMove;
+        }
+
+        function minimax(depth, isMaximizing, alpha, beta) {
+            if (depth === 0) {
+                return evaluateBoard();
+            }
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let i = 0; i < 15; i++) {
+                    for (let j = 0; j < 15; j++) {
+                        if (board[i][j] === 0) {
+                            board[i][j] = -1;
+                            const eval = minimax(depth - 1, false, alpha, beta);
+                            board[i][j] = 0;
+                            maxEval = Math.max(maxEval, eval);
+                            alpha = Math.max(alpha, eval);
+                            if (beta <= alpha) break;
+                        }
+                    }
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let i = 0; i < 15; i++) {
+                    for (let j = 0; j < 15; j++) {
+                        if (board[i][j] === 0) {
+                            board[i][j] = 1;
+                            const eval = minimax(depth - 1, true, alpha, beta);
+                            board[i][j] = 0;
+                            minEval = Math.min(minEval, eval);
+                            beta = Math.min(beta, eval);
+                            if (beta <= alpha) break;
+                        }
+                    }
+                }
+                return minEval;
+            }
+        }
+
+        function evaluateBoard() {
+            let score = 0;
+            
+            // 评估所有可能的线
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    // 水平
+                    if (j <= 10) score += evaluateLine(i, j, 0, 1);
+                    // 垂直
+                    if (i <= 10) score += evaluateLine(i, j, 1, 0);
+                    // 对角线
+                    if (i <= 10 && j <= 10) score += evaluateLine(i, j, 1, 1);
+                    if (i <= 10 && j >= 4) score += evaluateLine(i, j, 1, -1);
+                }
+            }
+            
+            return score;
+        }
+
+        function evaluateLine(row, col, dRow, dCol) {
+            let aiCount = 0;
+            let humanCount = 0;
+            
+            for (let i = 0; i < 5; i++) {
+                const r = row + i * dRow;
+                const c = col + i * dCol;
+                if (board[r][c] === -1) aiCount++;
+                else if (board[r][c] === 1) humanCount++;
+            }
+            
+            if (aiCount > 0 && humanCount > 0) return 0;
+            
+            if (aiCount === 5) return 10000;
+            if (humanCount === 5) return -10000;
+            if (aiCount === 4) return 1000;
+            if (humanCount === 4) return -1000;
+            if (aiCount === 3) return 100;
+            if (humanCount === 3) return -100;
+            if (aiCount === 2) return 10;
+            if (humanCount === 2) return -10;
+            
+            return aiCount - humanCount;
+        }
+
+        function checkWin(row, col) {
+            const directions = [
+                [0, 1], [1, 0], [1, 1], [1, -1]
+            ];
+            
+            const player = board[row][col];
+            
+            for (let [dRow, dCol] of directions) {
+                let count = 1;
+                let positions = [{row, col}];
+                
+                // 正方向
+                let r = row + dRow;
+                let c = col + dCol;
+                while (r >= 0 && r < 15 && c >= 0 && c < 15 && board[r][c] === player) {
+                    positions.push({row: r, col: c});
+                    count++;
+                    r += dRow;
+                    c += dCol;
+                }
+                
+                // 反方向
+                r = row - dRow;
+                c = col - dCol;
+                while (r >= 0 && r < 15 && c >= 0 && c < 15 && board[r][c] === player) {
+                    positions.unshift({row: r, col: c});
+                    count++;
+                    r -= dRow;
+                    c -= dCol;
+                }
+                
+                if (count >= 5) {
+                    highlightWinLine(positions.slice(0, 5), dRow, dCol);
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        function highlightWinLine(positions, dRow, dCol) {
+            const gameBoard = document.getElementById('gameBoard');
+            const line = document.createElement('div');
+            line.className = 'win-line';
+            
+            const firstPos = positions[0];
+            const lastPos = positions[4];
+            
+            const startCell = document.querySelector(`[data-row="${firstPos.row}"][data-col="${firstPos.col}"]`);
+            const endCell = document.querySelector(`[data-row="${lastPos.row}"][data-col="${lastPos.col}"]`);
+            
+            const startRect = startCell.getBoundingClientRect();
+            const endRect = endCell.getBoundingClientRect();
+            const boardRect = gameBoard.getBoundingClientRect();
+            
+            const startX = startRect.left - boardRect.left + startRect.width / 2;
+            const startY = startRect.top - boardRect.top + startRect.height / 2;
+            const endX = endRect.left - boardRect.left + endRect.width / 2;
+            const endY = endRect.top - boardRect.top + endRect.height / 2;
+            
+            const length = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+            const angle = Math.atan2(endY - startY, endX - startX);
+            
+            line.style.width = length + 'px';
+            line.style.height = '4px';
+            line.style.left = startX + 'px';
+            line.style.top = startY + 'px';
+            line.style.transform = `rotate(${angle}rad)`;
+            line.style.transformOrigin = '0 50%';
+            
+            gameBoard.appendChild(line);
+        }
+
+        function isBoardFull() {
+            return board.every(row => row.every(cell => cell !== 0));
+        }
+
+        function newGame() {
+            board = Array(15).fill().map(() => Array(15).fill(0));
+            currentPlayer = 1;
+            gameOver = false;
+            moveHistory = [];
+            
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.querySelectorAll('.piece').forEach(piece => piece.remove());
+            gameBoard.querySelectorAll('.win-line').forEach(line => line.remove());
+            
+            document.getElementById('undoBtn').disabled = true;
+            updateDisplay();
+        }
+
+        function undoMove() {
+            if (moveHistory.length >= 2) {
+                // 撤销AI的移动
+                const aiMove = moveHistory.pop();
+                board[aiMove.row][aiMove.col] = 0;
+                document.querySelector(`[data-row="${aiMove.row}"][data-col="${aiMove.col}"] .piece`).remove();
+                
+                // 撤销玩家的移动
+                const playerMove = moveHistory.pop();
+                board[playerMove.row][playerMove.col] = 0;
+                document.querySelector(`[data-row="${playerMove.row}"][data-col="${playerMove.col}"] .piece`).remove();
+                
+                currentPlayer = 1;
+                gameOver = false;
+                updateDisplay();
+                
+                if (moveHistory.length === 0) {
+                    document.getElementById('undoBtn').disabled = true;
+                }
+            }
+        }
+
+        function getHint() {
+            if (gameOver || currentPlayer !== 1) return;
+            
+            const move = getBestMove();
+            if (move) {
+                const cell = document.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
+                cell.style.background = 'linear-gradient(45deg, #FFD700, #FFA500)';
+                setTimeout(() => {
+                    cell.style.background = '';
+                }, 2000);
+            }
+        }
+
+        function setLevel(level) {
+            currentLevel = level;
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateDisplay();
+            newGame();
+        }
+
+        function updateDisplay() {
+            document.getElementById('currentLevel').textContent = currentLevel;
+            document.getElementById('currentPlayer').textContent = currentPlayer === 1 ? '黑子' : '白子';
+            document.getElementById('aiDifficulty').textContent = levelSettings[currentLevel].difficulty;
+            
+            if (!gameOver) {
+                document.getElementById('gameStatus').textContent = 
+                    currentPlayer === 1 ? '轮到你了，放置黑子' : 'AI正在思考...';
+            }
+        }
+
+        function toggleMusic() {
+            const music = document.getElementById('bgMusic');
+            const btn = document.getElementById('musicToggle');
+            
+            if (musicPlaying) {
+                music.pause();
+                btn.textContent = '🔇';
+                musicPlaying = false;
+            } else {
+                music.play().catch(() => {
+                    // 处理自动播放限制
+                    console.log('音频播放被浏览器阻止');
+                });
+                btn.textContent = '🎵';
+                musicPlaying = true;
+            }
+        }
+
+        // 初始化游戏
+        initGame();
+        
+        // 创建简单的背景音乐（使用Web Audio API）
+        function createBackgroundMusic() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            
+            oscillator.start();
+            
+            return audioContext;
+        }
+    </script>
+</body>
+</html>
